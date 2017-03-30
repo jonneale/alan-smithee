@@ -4,18 +4,23 @@
            [java.io ByteArrayOutputStream ByteArrayInputStream]
            [java.awt.image BufferedImage]
            [java.awt Color]
-           [javax.imageio ImageIO])
-  (:require [clojure.java.io :as io])
+           [javax.imageio ImageIO]
+           [net.coobird.thumbnailator Thumbnails])
+  (:require [clojure.java.io :as io]
+            [movie-to-image.films :refer :all])
   (:gen-class))
 
 
-(def magnolia ["Magnolia" "/Users/jon.neale/Documents/videos/Magnolia.1999/Magnolia.1999.mp4"])
-(def ghost-in-the-shell ["Ghost In The Shell" "/Users/jon.neale/Documents/videos/Ghost in the Shell (1995)/Ghost in the Shell (1995).mp4"])
-(def open-range ["Open Range" "/Users/jon.neale/Documents/videos/Open Range (2003)/Open.Range.2003.mp4"])
-(def high-rise ["High Rise" "/Users/jon.neale/Documents/videos/High-Rise 2015/High-Rise.mkv"])
-(def the-royal-tenenbaums ["The Royal Tenenbaums" "/Users/jon.neale/Documents/videos/The.Royal.Tenenbaums.2001.mp4"])
+(def films [open-range 
+            high-rise 
+            the-royal-tenenbaums 
+            magnolia])
 
-
+(def more-films
+  [bad-day-at-black-rock
+   nine-to-five
+   locke
+   lone-star])
 
 (defn buffered-image
   [path]
@@ -28,7 +33,7 @@
 
 (defn write-image
   [image film-title scale-factor]
-  (let [output-file (io/file (str "/Users/jon.neale/scratch/movie-outputs" film-title "-" scale-factor "-" (uuid) ".jpg"))]
+  (let [output-file (io/file (str "/Users/jon.neale/scratch/movie-outputs/" film-title "-" scale-factor "-" (uuid) ".jpg"))]
     (ImageIO/write image "png" output-file)))
 
 (defn get-frame
@@ -44,23 +49,25 @@
 
 (defn get-next-frame-as-buffered-image
   [frame-grabber]
-  (loop []
-    (let [f (. frame-grabber grab)
-          c (Java2DFrameConverter.)
-          image (. c getBufferedImage f)]
-      (if image 
-        image
-        (recur)))))
+  (loop [i 0]
+    (if (> i 1000) (do (println "No more frames!") nil)
+        (let [f (. frame-grabber grab)
+              c (Java2DFrameConverter.)
+              image (. c getBufferedImage f)]
+          (if image 
+            image
+            (recur (inc i)))))))
 
 (defn calculate-offset
   [i scale-factor desired-width]
   [(mod (* i scale-factor) desired-width) (int (/ (* i scale-factor) desired-width))])
 
+(defn now [] (str (java.time.LocalDateTime/now)))
+
 (defn progress-report
   [film scale-factor total current]
-  (let [percentage-complete (* 100 (/ current total))]
-    (when (zero? (mod percentage-complete 1.0))
-      (println film " scaled to " scale-factor " is " percentage-complete "% complete"))))
+  (when (zero? (mod current 500))
+    (println (format "%s: %s scaled to %dx%d is %f percent complete" (now) film scale-factor scale-factor (double (* 100 (/ current (double total))))))))
 
 
 (defn get-frame
@@ -82,6 +89,12 @@
         _          (. g stop)]
     frames))
 
+(defn get-thumbnail
+  [buffered-image width height]
+  (. (. (Thumbnails/of (into-array BufferedImage [buffered-image]))
+        size width height)
+     asBufferedImage))
+
 (defn tiling
   [film-title film-path frames-to-capture scale-factor desired-width]
   (let [g (FFmpegFrameGrabber. film-path)
@@ -93,27 +106,33 @@
     (. g start)
     (doseq [i (range frames-to-capture)]
       (progress-report film-title scale-factor frames-to-capture i)
-      (let [[x-offset y-offset] (calculate-offset i scale-factor desired-width)
-            original-image (get-next-frame-as-buffered-image g)]
-        (. new-image-graphics drawImage original-image x-offset y-offset scale-factor scale-factor nil)))
-    (. g stop)
+      (when-let [frame               (get-next-frame-as-buffered-image g)]
+        (let [[x-offset y-offset] (calculate-offset i scale-factor desired-width)]
+          (. new-image-graphics drawImage frame x-offset y-offset scale-factor scale-factor nil))))
+    (println film-title " scaled to " scale-factor " is complete ")
     (. new-image-graphics dispose)
-    (write-image new-image film-title scale-factor)))
+    (write-image new-image film-title scale-factor)
+    (println film-title " scaled to " scale-factor " processed")
+    (. g stop)))
 
+(defn do-it
+  [[film-title film-path] s width] 
+  (let [duration-in-frames (get-film-length film-path)]
+    (println duration-in-frames)
+    (tiling film-title film-path duration-in-frames s width)))
 
 (defn generate
-  [[film-title film-path]]
+  [film]
   (time
-   (doall (pmap #(tiling film-title film-path (* 4800 24) % 720) [1 2 5 10]))))
+   (doall (pmap (partial do-it film) [5 10 20]))))
 
 (defn generate-for-films
   []
   (time
    (doall
-    (pmap (fn [[film-title film-path]] 
-            (let [duration-in-frames (get-film-length film-path)]
-              (tiling film-title film-path duration-in-frames 5 720)))
-          [magnolia open-range high-rise the-royal-tenenbaums]))))
+    (pmap #(apply do-it %)
+          (for [f harry-potter-films]
+            [f 5 1280])))))
 
 (defn -main
   [& args]

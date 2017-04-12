@@ -1,26 +1,15 @@
 (ns movie-to-image.core
   (:import [org.bytedeco.javacv FFmpegFrameGrabber OpenCVFrameConverter Java2DFrameConverter Java2DFrameUtils]
-
            [java.io ByteArrayOutputStream ByteArrayInputStream]
            [java.awt.image BufferedImage]
            [java.awt Color]
            [javax.imageio ImageIO]
            [net.coobird.thumbnailator Thumbnails])
   (:require [clojure.java.io :as io]
+            [movie-to-image.image :as image]
+            [movie-to-image.film  :as film]
             [movie-to-image.films :refer :all])
   (:gen-class))
-
-
-(def films [open-range 
-            high-rise 
-            the-royal-tenenbaums 
-            magnolia])
-
-(def more-films
-  [bad-day-at-black-rock
-   nine-to-five
-   locke
-   lone-star])
 
 (defn buffered-image
   [path]
@@ -58,10 +47,6 @@
             image
             (recur (inc i)))))))
 
-(defn calculate-offset
-  [i scale-factor desired-width]
-  [(mod (* i scale-factor) desired-width) (int (/ (* i scale-factor) desired-width))])
-
 (defn now [] (str (java.time.LocalDateTime/now)))
 
 (defn progress-report
@@ -84,55 +69,57 @@
 (defn get-film-length
   [film-path]
   (let [g          (FFmpegFrameGrabber. film-path)
-        _          (. g start)
-        frames     (. g getLengthInFrames)
+        _          (.start g)
+        frames     (.getLengthInFrames g)
         _          (. g stop)]
     frames))
 
 (defn get-thumbnail
   [buffered-image width height]
-  (. (. (Thumbnails/of (into-array BufferedImage [buffered-image]))
-        size width height)
-     asBufferedImage))
+  (.asBufferedImage 
+   (.size 
+    (Thumbnails/of (into-array BufferedImage [buffered-image]))
+    width height)))
 
-(defn tiling
+(defn- calculate-final-height
+  [desired-width scale-factor frames-to-capture]
+  (let [total-length     (* scale-factor frames-to-capture)
+        number-of-lines  (inc (int (/ total-length desired-width)))]
+    (* scale-factor number-of-lines)))
+
+(defn create-tiled-image
   [film-title film-path frames-to-capture scale-factor desired-width]
-  (let [g (FFmpegFrameGrabber. film-path)
-        new-image (BufferedImage. desired-width
-                                  (inc (int (/ (* frames-to-capture scale-factor) desired-width)))
-                                  BufferedImage/TYPE_INT_RGB)
-        new-image-graphics (. new-image createGraphics)]
-    (println "width - " desired-width " height - " (inc (int (/ (* frames-to-capture scale-factor) desired-width))))
-    (. g start)
-    (doseq [i (range frames-to-capture)]
-      (progress-report film-title scale-factor frames-to-capture i)
-      (when-let [frame               (get-next-frame-as-buffered-image g)]
-        (let [[x-offset y-offset] (calculate-offset i scale-factor desired-width)]
-          (. new-image-graphics drawImage frame x-offset y-offset scale-factor scale-factor nil))))
-    (println film-title " scaled to " scale-factor " is complete ")
-    (. new-image-graphics dispose)
-    (write-image new-image film-title scale-factor)
-    (println film-title " scaled to " scale-factor " processed")
-    (. g stop)))
+  (image/with-image-grabber [g (FFmpegFrameGrabber. film-path)]
+    (let [[image-width image-height]   (film/frame-dimensions g)
+          [scaled-width scaled-height] (image/scale-preserving-aspect-ratio image-width image-height desired-width)
+          final-height    (calculate-final-height desired-width scale-factor frames-to-capture)
+          new-image       (image/new-image desired-width final-height)
+          new-image-graphics (.createGraphics new-image)]
+      (doseq [i (range frames-to-capture)]
+        (when-let [frame               (get-next-frame-as-buffered-image g)]
+          (let [[x-offset y-offset] (calculate-offset i scale-factor desired-width)]
+            (.drawImage new-image-graphics frame x-offset y-offset scale-factor scale-factor nil))))
+      (.dispose new-image-graphics)
+      (write-image new-image film-title scale-factor))))
 
-(defn do-it
+(defn create-tiled-image-from-movie-path
   [[film-title film-path] s width] 
   (let [duration-in-frames (get-film-length film-path)]
     (println duration-in-frames)
-    (tiling film-title film-path duration-in-frames s width)))
+    (create-tiled-image film-title film-path duration-in-frames s width)))
 
 (defn generate
   [film]
   (time
-   (doall (pmap (partial do-it film) [5 10 20]))))
+   (doall (pmap (partial create-tiled-image-from-movie-path film) [5 10 20]))))
 
 (defn generate-for-films
-  []
+  [films]
   (time
    (doall
-    (pmap #(apply do-it %)
-          (for [f harry-potter-films]
-            [f 5 1280])))))
+    (pmap #(apply create-tiled-image-from-movie-path %)
+          (for [f films]
+            [f 5 1920])))))
 
 (defn -main
   [& args]

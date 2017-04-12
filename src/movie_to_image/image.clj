@@ -13,6 +13,10 @@
             [movie-to-image.util :as util])
   (:gen-class))
 
+(defn calculate-offset
+  [i scale-factor desired-width]
+  [(mod (* i scale-factor) desired-width) (int (/ (* i scale-factor) desired-width))])
+
 (defmacro with-image-grabber
   [grabber-binding & body]
   `(let ~(subvec grabber-binding 0 2)
@@ -30,10 +34,17 @@
   (. (DefaultResizerFactory/getInstance)
      getResizer (dimension image-width image-height) (dimension intended-width intended-height)))
 
+(defn scale-preserving-aspect-ratio
+  [image-width image-height scaled-width]
+  [scaled-width
+   (inc (int (* (/ scaled-width image-width) image-height)))])
+
 (defn get-thumbnail-maker
-  [image-width image-height intended-width intended-height]
-  (. (FixedSizeThumbnailMaker. intended-width intended-height false true)
-     resizer (get-resizer image-width image-height intended-width intended-height)))
+  [frame-grabber image-width image-height intended-width intended-height]
+  (let [[image-width image-height]   (frame-dimensions frame-grabber)
+        [scaled-width scaled-height] (scale-preserving-aspect-ratio image-width image-height intended-width)]
+    (. (FixedSizeThumbnailMaker. intended-width intended-height false true)
+       resizer (get-resizer image-width image-height intended-width intended-height))))
 
 (defn now [] (str (java.time.LocalDateTime/now)))
 

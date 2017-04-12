@@ -23,12 +23,12 @@
   (image/with-image-grabber [g (FFmpegFrameGrabber. film-path)]
     (let [[image-width image-height]   (film/frame-dimensions g)
           [scaled-width scaled-height] (image/scale-preserving-aspect-ratio image-width image-height desired-width)
-          final-height    (calculate-final-height desired-width scale-factor frames-to-capture)
-          new-image       (image/new-image desired-width final-height)
-          new-image-graphics (.createGraphics new-image)]
+          final-height                 (calculate-final-height desired-width scale-factor frames-to-capture)
+          new-image                    (image/new-image desired-width final-height)
+          new-image-graphics           (.createGraphics new-image)]
       (doseq [i (range frames-to-capture)]
-        (when-let [frame               (film/get-next-frame-as-buffered-image g)]
-          (let [[x-offset y-offset] (calculate-offset i scale-factor desired-width)]
+        (when-let [frame (film/get-next-frame-as-buffered-image g)]
+          (let [[x-offset y-offset] (image/calculate-offset i scale-factor desired-width)]
             (.drawImage new-image-graphics frame x-offset y-offset scale-factor scale-factor nil))))
       (.dispose new-image-graphics)
       (image/write-image new-image film-title scale-factor))))

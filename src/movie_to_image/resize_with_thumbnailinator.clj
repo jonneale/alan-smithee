@@ -14,7 +14,6 @@
             [movie-to-image.util :as util])
   (:gen-class))
 
-
 (defn- calculate-final-height
   [desired-width scaled-width scaled-height frames-to-capture]
   (let [total-length     (* scaled-width frames-to-capture)
@@ -26,20 +25,17 @@
   (image/with-image-grabber [g (FFmpegFrameGrabber. film-path)]
     (let [[image-width image-height]   (film/frame-dimensions g)
           [scaled-width scaled-height] (image/scale-preserving-aspect-ratio image-width image-height desired-final-width)
-          final-height    (calculate-final-height desired-final-width scaled-width scaled-height frames-to-capture)
-          thumbnail-maker (image/get-thumbnail-maker g scale-factor)
-          new-image       (image/new-image desired-final-width final-height)
-          new-image-graphics (.createGraphics new-image)]
+          final-height                 (calculate-final-height desired-final-width scaled-width scaled-height frames-to-capture)
+          thumbnail-maker              (image/get-thumbnail-maker g scale-factor)
+          new-image                    (image/new-image desired-final-width final-height)
+          new-image-graphics           (.createGraphics new-image)]
       (doseq [i (range frames-to-capture)]
-        (util/progress-report film-title scale-factor frames-to-capture i)
-        (when-let [frame               (get-next-frame-as-buffered-image g)]
-          (let [resized-image          (image/scale-image thumbnail-maker frame)
+        (when-let [frame (film/get-next-frame-as-buffered-image g)]
+          (let [resized-image       (image/scale-image thumbnail-maker frame)
                 [x-offset y-offset] (image/calculate-offset i scaled-width scaled-height desired-final-width)]
             (.drawImage new-image-graphics resized-image x-offset y-offset nil))))
-      (println film-title " scaled to " scale-factor " is complete ")
-      (. new-image-graphics dispose)
-      (image/write-image new-image film-title scale-factor)
-      (println film-title " scaled to " scale-factor " processed"))))
+      (.dispose new-image-graphics)
+      (image/write-image new-image film-title scale-factor))))
 
 
 (defn create-tiled-image-from-movie-path

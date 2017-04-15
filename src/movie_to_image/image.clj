@@ -14,8 +14,8 @@
   (:gen-class))
 
 (defn calculate-offset
-  [i scale-factor desired-width]
-  [(mod (* i scale-factor) desired-width) (int (/ (* i scale-factor) desired-width))])
+  [i scaled-width scaled-height desired-width]
+  [(mod (* i scaled-width) desired-width) (* scaled-height (int (/ (* i scaled-width) desired-width)))])
 
 (defmacro with-image-grabber
   [grabber-binding & body]
@@ -40,9 +40,8 @@
 
 (defn get-thumbnail-maker
   [image-width image-height intended-width intended-height]
-  (let [[scaled-width scaled-height] (scale-preserving-aspect-ratio image-width image-height intended-width)]
-    (. (FixedSizeThumbnailMaker. intended-width intended-height false true)
-       resizer (get-resizer image-width image-height intended-width intended-height))))
+  (. (FixedSizeThumbnailMaker. intended-width intended-height false true)
+     resizer (get-resizer image-width image-height intended-width intended-height)))
 
 (defn now [] (str (java.time.LocalDateTime/now)))
 

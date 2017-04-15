@@ -8,14 +8,9 @@
 
 (defn get-next-frame-as-buffered-image
   [frame-grabber]
-  (loop [i 0]
-    (if (> i 1000) (do (println "No more frames!") nil)
-        (let [f (.grabImage frame-grabber)
-              c (Java2DFrameConverter.)
-              image (.getBufferedImage c f)]
-          (if image 
-            image
-            (recur (inc i)))))))
+  (let [f (.grabImage frame-grabber)
+        c (Java2DFrameConverter.)]
+    (.getBufferedImage c f)))
 
 (defn get-film-length
   [film-path]

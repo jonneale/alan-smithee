@@ -34,15 +34,13 @@
   (. (DefaultResizerFactory/getInstance)
      getResizer (dimension image-width image-height) (dimension intended-width intended-height)))
 
-(defn scale-preserving-aspect-ratio
+(defn scaled-height-preserving-aspect-ratio
   [image-width image-height scaled-width]
-  [scaled-width
-   (inc (int (* (/ scaled-width image-width) image-height)))])
+  (inc (int (* (/ scaled-width image-width) image-height))))
 
 (defn get-thumbnail-maker
-  [frame-grabber image-width image-height intended-width intended-height]
-  (let [[image-width image-height]   (frame-dimensions frame-grabber)
-        [scaled-width scaled-height] (scale-preserving-aspect-ratio image-width image-height intended-width)]
+  [image-width image-height intended-width intended-height]
+  (let [[scaled-width scaled-height] (scale-preserving-aspect-ratio image-width image-height intended-width)]
     (. (FixedSizeThumbnailMaker. intended-width intended-height false true)
        resizer (get-resizer image-width image-height intended-width intended-height))))
 
@@ -54,7 +52,9 @@
 
 (defn write-image
   [image film-title scale-factor]
-  (let [output-file (io/file (str "/Users/jon.neale/scratch/movie-outputs/" film-title "-" scale-factor "-" (util/uuid) ".png"))]
+  (let [filename    (str film-title "-" scale-factor "-" (util/uuid) ".png") 
+        output-file (io/file (str "/Users/jon.neale/scratch/movie-outputs/" filename))]
+    (println "Writing file - " filename)
     (ImageIO/write image "png" output-file)))
 
 (defn new-image

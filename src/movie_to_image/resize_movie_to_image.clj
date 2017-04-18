@@ -1,4 +1,4 @@
-(ns movie-to-image.resize-with-thumbnailinator
+(ns movie-to-image.resize-movie-to-image
   (:import [org.bytedeco.javacv FFmpegFrameGrabber OpenCVFrameConverter Java2DFrameConverter Java2DFrameUtils]
            [java.io ByteArrayOutputStream ByteArrayInputStream]
            [java.awt.image BufferedImage]
@@ -11,7 +11,8 @@
             [movie-to-image.films :refer :all]
             [movie-to-image.film :as film]            
             [movie-to-image.image :as image]
-            [movie-to-image.util :as util])
+            [movie-to-image.util :as util]
+            [clojure.pprint])
   (:gen-class))
 
 (defn- calculate-final-height
@@ -41,43 +42,43 @@
         (scale-image new-image-graphics frame scaled-width scaled-height x-offset y-offset thumbnail-maker scaling-method)))))
 
 (defn- create-tiled-image
-  [film-title film-path frames-to-capture scaled-width desired-width scaling-method]
+  [film-title film-path frames-to-drop frames-to-capture scaled-width desired-width scaling-method]
   (image/with-image-grabber [g (FFmpegFrameGrabber. film-path)]
     (let [[image-width image-height]   (film/frame-dimensions g)
-          scaled-height                (image/scaled-height-preserving-aspect-ratio image-width image-height desired-width)
+          scaled-height                (image/scaled-height-preserving-aspect-ratio image-width image-height scaled-width)
           final-height                 (calculate-final-height desired-width scaled-width scaled-height frames-to-capture)
           thumbnail-maker              (image/get-thumbnail-maker image-width image-height scaled-width scaled-height)
           new-image                    (image/new-image desired-width final-height)
           new-image-graphics           (.createGraphics new-image)]
+      (doseq [i (range frames-to-drop)] (film/get-next-frame-as-buffered-image g))
+      (clojure.pprint/pprint {:scaled-height scaled-height
+                              :scaled-width scaled-width
+                              :desired-width desired-width
+                              :final-height final-height})
       (write-tiled-images frames-to-capture g scaled-width scaled-height desired-width new-image-graphics thumbnail-maker scaling-method)
       (.dispose new-image-graphics)
       (image/write-image new-image film-title scaled-width))))
 
 (defn create-tiled-image-from-movie-path
   [[film-title film-path] s width scaling-method] 
-  (let [duration-in-frames (int (* 0.1 (film/get-film-length film-path)))]
-    (create-tiled-image film-title film-path duration-in-frames s width scaling-method)))
+  (let [duration-in-frames (film/get-film-length film-path)
+        opening-credits-duration-in-frames (* 60 24) 
+        closing-credits-duration-in-frames  (* 240 24)
+        frames-to-take    (- duration-in-frames opening-credits-duration-in-frames closing-credits-duration-in-frames)]
+    (create-tiled-image film-title film-path opening-credits-duration-in-frames frames-to-take s width scaling-method)))
 
 (defn time-film-image-generation
-  [movie-info]
-  (println "Generating image for using Java default scaling")
-  (time (create-tiled-image-from-movie-path movie-info 1 640 :java))
-  (println "Generating image for using Thumbnailinator scaling")
-  (time (create-tiled-image-from-movie-path movie-info 1 640 :thumbnailinator)))
-
-;; (defn generate-tiled-images-for-films
-;;   [titles-and-paths]
-;;   (time 
-;;    (doall
-;;     (pmap #(apply create-tiled-image-from-movie-path %)
-;;           (for [f titles-and-paths
-;;                 size [5 10 20]]
-;;             [f size 1920])))))
+  [movies]
+  (doall (pmap #(apply create-tiled-image-from-movie-path %)
+               (for [scaling-tool [:java :thumbnailinator]
+                     size         [1]
+                     movie        movies]
+                 [movie size 640 scaling-tool]))))
 
 (defn generate-tiled-images-for-films
-  [_]
-  (time-film-image-generation skyfall))
+  [films]
+  (time-film-image-generation ))
 
 (defn -main
   [& args]
-  (generate-tiled-images-for-films args))
+  (println args))

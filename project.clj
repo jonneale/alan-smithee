@@ -6,7 +6,7 @@
   :dependencies [[org.clojure/clojure "1.8.0"]
                  [org.bytedeco/javacv-platform "1.3.2"]
                  [net.coobird/thumbnailator "0.4.8"]]
-  :main ^:skip-aot movie-to-image.core
+  :main ^:skip-aot movie-to-image.resize-movie-to-image
   :target-path "target/%s"
   :jvm-opts ["-Xmx6G"]
   :profiles {:uberjar {:aot :all}})

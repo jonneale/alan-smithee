@@ -60,25 +60,15 @@
       (image/write-image new-image film-title scaled-width))))
 
 (defn create-tiled-image-from-movie-path
-  [[film-title film-path] s width scaling-method] 
-  (let [duration-in-frames (film/get-film-length film-path)
-        opening-credits-duration-in-frames (* 60 24) 
-        closing-credits-duration-in-frames  (* 240 24)
-        frames-to-take    (- duration-in-frames opening-credits-duration-in-frames closing-credits-duration-in-frames)]
-    (create-tiled-image film-title film-path opening-credits-duration-in-frames frames-to-take s width scaling-method)))
-
-(defn time-film-image-generation
-  [movies]
-  (doall (pmap #(apply create-tiled-image-from-movie-path %)
-               (for [scaling-tool [:java :thumbnailinator]
-                     size         [1]
-                     movie        movies]
-                 [movie size 640 scaling-tool]))))
-
-(defn generate-tiled-images-for-films
-  [films]
-  (time-film-image-generation ))
+  ([film-title film-path]
+   (create-tiled-image-from-movie-path film-title film-path 5 1920 :thumbnailinator))
+  ([film-title film-path s width scaling-method]
+   (let [duration-in-frames (film/get-film-length film-path)
+         opening-credits-duration-in-frames (* 60 24) 
+         closing-credits-duration-in-frames  (* 240 24)
+         frames-to-take    (- duration-in-frames opening-credits-duration-in-frames closing-credits-duration-in-frames)]
+     (create-tiled-image film-title film-path opening-credits-duration-in-frames frames-to-take s width scaling-method))))
 
 (defn -main
   [& args]
-  (println args))
+  (apply create-tiled-image-from-movie-path args))

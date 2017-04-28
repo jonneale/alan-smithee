@@ -1,6 +1,6 @@
 # alan-smithee
 
-Tooling used to produce a single tiled image comprised of compressed films from an MP4 video
+Ruins films by producing a single tiled image comprised of compressed films from an MP4 video
 
 ## Example - Tron Legacy
 

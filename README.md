@@ -4,7 +4,7 @@ Tooling used to produce a single tiled image comprised of compressed films from 
 
 ## Example - Tron Legacy
 
-![Tron Legacy compressed to single image](https://github.com/jonneale/alan-smithee/tree/master/resources/tron.jpg)
+![Tron Legacy compressed to single image](https://raw.githubusercontent.com/jonneale/alan-smithee/master/resources/tron.jpg)
 
 ## Usage
 

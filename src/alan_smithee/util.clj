@@ -1,4 +1,4 @@
-(ns movie-to-image.util)
+(ns alan-smithee.util)
 
 (defn now [] (str (java.time.LocalDateTime/now)))
 

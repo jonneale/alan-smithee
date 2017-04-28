@@ -1,6 +1,6 @@
-(ns movie-to-image.core-test
+(ns alan-smithee.core-test
   (:require [clojure.test :refer :all]
-            [movie-to-image.core :refer :all]))
+            [alan-smithee.core :refer :all]))
 
 (deftest a-test
   (testing "FIXME, I fail."

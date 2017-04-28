@@ -1,6 +1,6 @@
-(ns movie-to-image.film
+(ns alan-smithee.film
   (:import [org.bytedeco.javacv FFmpegFrameGrabber OpenCVFrameConverter Java2DFrameConverter Java2DFrameUtils])
-  (:require [movie-to-image.image :as image]))
+  (:require [alan-smithee.image :as image]))
 
 (defn frame-dimensions
   [grabber]

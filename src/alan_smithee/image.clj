@@ -1,4 +1,4 @@
-(ns movie-to-image.image
+(ns alan-smithee.image
   (:import [org.bytedeco.javacv FFmpegFrameGrabber OpenCVFrameConverter Java2DFrameConverter Java2DFrameUtils]
 
            [java.io ByteArrayOutputStream ByteArrayInputStream]
@@ -9,8 +9,8 @@
            [net.coobird.thumbnailator.makers FixedSizeThumbnailMaker]
            [net.coobird.thumbnailator.resizers DefaultResizerFactory])
   (:require [clojure.java.io :as io]
-            [movie-to-image.films :refer :all]
-            [movie-to-image.util :as util])
+            [alan-smithee.films :refer :all]
+            [alan-smithee.util :as util])
   (:gen-class))
 
 (defn calculate-offset
@@ -25,14 +25,18 @@
            (. ~(grabber-binding 0) stop)
            result#))))
 
+(defn calculate-offset
+  [i scaled-width scaled-height desired-width]
+  [(mod (* i scaled-width) desired-width) (* scaled-height (int (/ (* i scaled-width) desired-width)))])
+
 (defn dimension
   [width height]
   (Dimension. width height))
 
 (defn- get-resizer
   [image-width image-height intended-width intended-height]
-  (. (DefaultResizerFactory/getInstance)
-     getResizer (dimension image-width image-height) (dimension intended-width intended-height)))
+  (.getResizer (DefaultResizerFactory/getInstance)
+               (dimension image-width image-height) (dimension intended-width intended-height)))
 
 (defn scaled-height-preserving-aspect-ratio
   [image-width image-height scaled-width]
@@ -40,14 +44,14 @@
 
 (defn get-thumbnail-maker
   [image-width image-height intended-width intended-height]
-  (. (FixedSizeThumbnailMaker. intended-width intended-height false true)
-     resizer (get-resizer image-width image-height intended-width intended-height)))
+  (.resizer (FixedSizeThumbnailMaker. intended-width intended-height false true)
+            (get-resizer image-width image-height intended-width intended-height)))
 
 (defn now [] (str (java.time.LocalDateTime/now)))
 
-(defn scale-image
+(defn scale
   [thumbnail-maker buffered-image-to-scale]
-  (. thumbnail-maker make buffered-image-to-scale))
+  (.make thumbnail-maker buffered-image-to-scale))
 
 (defn write-image
   [image film-title scale-factor]

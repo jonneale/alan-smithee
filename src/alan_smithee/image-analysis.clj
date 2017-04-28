@@ -1,4 +1,4 @@
-(ns movie-to-image.image-analysis
+(ns alan-smithee.image-analysis
   (:import [java.awt.image BufferedImage DataBufferByte]
            [java.io IOException]
            [javax.imageio ImageIO]

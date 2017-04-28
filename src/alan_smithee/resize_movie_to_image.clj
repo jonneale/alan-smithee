@@ -1,17 +1,9 @@
 (ns alan-smithee.resize-movie-to-image
-  (:import [org.bytedeco.javacv FFmpegFrameGrabber OpenCVFrameConverter Java2DFrameConverter Java2DFrameUtils]
-           [java.io ByteArrayOutputStream ByteArrayInputStream]
-           [java.awt.image BufferedImage]
-           [java.awt Color Dimension]
-           [javax.imageio ImageIO]
-           [net.coobird.thumbnailator Thumbnails]
-           [net.coobird.thumbnailator.makers FixedSizeThumbnailMaker]
-           [net.coobird.thumbnailator.resizers DefaultResizerFactory])
+  (:import [org.bytedeco.javacv FFmpegFrameGrabber])
   (:require [clojure.java.io :as io]
             [alan-smithee.film :as film]            
             [alan-smithee.image :as image]
-            [alan-smithee.util :as util]
-            [clojure.pprint])
+            [alan-smithee.util :as util])
   (:gen-class))
 
 (defn- calculate-final-height

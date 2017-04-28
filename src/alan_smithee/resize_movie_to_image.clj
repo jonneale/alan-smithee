@@ -1,4 +1,4 @@
-(ns alan-smithee.resize-alan-smithee
+(ns alan-smithee.resize-movie-to-image
   (:import [org.bytedeco.javacv FFmpegFrameGrabber OpenCVFrameConverter Java2DFrameConverter Java2DFrameUtils]
            [java.io ByteArrayOutputStream ByteArrayInputStream]
            [java.awt.image BufferedImage]

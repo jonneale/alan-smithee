@@ -35,7 +35,7 @@
 
 (defn- create-tiled-image
   ([film-title film-path]
-   (let [frames-to-capture (film/get-length-in-frames film-path)]
+   (let [frames-to-capture (film/get-film-length film-path)]
      (create-tiled-image film-title film-path frames-to-capture 5 1920)))
   ([film-title film-path frames-to-capture scaled-width desired-width]
    (image/with-image-grabber [g (FFmpegFrameGrabber. film-path)]
@@ -49,10 +49,6 @@
        (.dispose new-image-graphics)
        (image/write-image new-image film-title scaled-width)))))
 
-(defn do-it
-  []
-  (create-tiled-image (first ghost-in-the-shell) (last ghost-in-the-shell) (film/get-film-length (last ghost-in-the-shell)) 5 1920))
-
 (defn -main
   [& args]
-  (apply create-tiled-image-from-movie-path args))
+  (apply create-tiled-image args))

@@ -34,17 +34,20 @@
         (scale-image new-image-graphics frame scaled-width scaled-height x-offset y-offset thumbnail-maker)))))
 
 (defn- create-tiled-image
-  [film-title film-path frames-to-capture scaled-width desired-width]
-  (image/with-image-grabber [g (FFmpegFrameGrabber. film-path)]
-    (let [[image-width image-height]   (film/frame-dimensions g)
-          scaled-height                (image/scaled-height-preserving-aspect-ratio image-width image-height scaled-width)
-          final-height                 (calculate-final-height desired-width scaled-width scaled-height frames-to-capture)
-          thumbnail-maker              (image/get-thumbnail-maker image-width image-height scaled-width scaled-height)
-          new-image                    (image/new-image desired-width final-height)
-          new-image-graphics           (.createGraphics new-image)]
-      (write-tiled-images frames-to-capture g scaled-width scaled-height desired-width new-image-graphics thumbnail-maker)
-      (.dispose new-image-graphics)
-      (image/write-image new-image film-title scaled-width))))
+  ([film-title film-path]
+   (let [frames-to-capture (film/get-length-in-frames film-path)]
+     (create-tiled-image film-title film-path frames-to-capture 5 1920)))
+  ([film-title film-path frames-to-capture scaled-width desired-width]
+   (image/with-image-grabber [g (FFmpegFrameGrabber. film-path)]
+     (let [[image-width image-height]   (film/frame-dimensions g)
+           scaled-height                (image/scaled-height-preserving-aspect-ratio image-width image-height scaled-width)
+           final-height                 (calculate-final-height desired-width scaled-width scaled-height frames-to-capture)
+           thumbnail-maker              (image/get-thumbnail-maker image-width image-height scaled-width scaled-height)
+           new-image                    (image/new-image desired-width final-height)
+           new-image-graphics           (.createGraphics new-image)]
+       (write-tiled-images frames-to-capture g scaled-width scaled-height desired-width new-image-graphics thumbnail-maker)
+       (.dispose new-image-graphics)
+       (image/write-image new-image film-title scaled-width)))))
 
 (defn do-it
   []

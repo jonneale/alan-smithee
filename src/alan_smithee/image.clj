@@ -9,7 +9,6 @@
            [net.coobird.thumbnailator.makers FixedSizeThumbnailMaker]
            [net.coobird.thumbnailator.resizers DefaultResizerFactory])
   (:require [clojure.java.io :as io]
-            [alan-smithee.films :refer :all]
             [alan-smithee.util :as util])
   (:gen-class))
 
@@ -46,8 +45,6 @@
   [image-width image-height intended-width intended-height]
   (.resizer (FixedSizeThumbnailMaker. intended-width intended-height false true)
             (get-resizer image-width image-height intended-width intended-height)))
-
-(defn now [] (str (java.time.LocalDateTime/now)))
 
 (defn scale
   [thumbnail-maker buffered-image-to-scale]

@@ -8,7 +8,6 @@
            [net.coobird.thumbnailator.makers FixedSizeThumbnailMaker]
            [net.coobird.thumbnailator.resizers DefaultResizerFactory])
   (:require [clojure.java.io :as io]
-            [alan-smithee.films :refer :all]
             [alan-smithee.film :as film]            
             [alan-smithee.image :as image]
             [alan-smithee.util :as util]
